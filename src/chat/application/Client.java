@@ -8,7 +8,7 @@ import java.net.*;
 import javax.swing.*;
 import javax.swing.border.*;
 
-public class Server implements ActionListener{
+public class Client implements ActionListener{
 
     static JFrame f = new JFrame();
 
@@ -18,12 +18,12 @@ public class Server implements ActionListener{
     private static final Color FOOTER_BACKGROUND_COLOR = new Color(50, 50, 50);
 
     JTextField text;
-    JPanel p3;
+    static JPanel p3;
     static Box vertical = Box.createVerticalBox();
 
     static DataOutputStream dout;
 
-    Server() {
+    Client() {
         f.setLayout(null); // layout for the frame
 
         f.setIconImage(new ImageIcon("src\\assets\\icons\\icon_header.png").getImage());
@@ -82,36 +82,37 @@ public class Server implements ActionListener{
 
     public void actionPerformed(ActionEvent e) {
         try{
+            String output = text.getText();
+
+            JPanel local_panel = formatLabel(output);
+
+            p3.setLayout(new BorderLayout());
+
+            JPanel right = new JPanel(new BorderLayout());
+            right.add(local_panel, BorderLayout.LINE_END);
+            right.setOpaque(false);
+
+
+            vertical.add(right);
+            vertical.add(Box.createVerticalStrut(20));
+            vertical.setOpaque(false);
+
+            p3.add(vertical, BorderLayout.PAGE_START);
+
             if(dout != null){
-                String output = text.getText();
-
-                JPanel local_panel = formatLabel(output);
-
-                p3.setLayout(new BorderLayout());
-
-                JPanel right = new JPanel(new BorderLayout());
-                right.add(local_panel, BorderLayout.LINE_END);
-                right.setOpaque(false);
-
-
-                vertical.add(right);
-                vertical.add(Box.createVerticalStrut(20));
-                vertical.setOpaque(false);
-
-                p3.add(vertical, BorderLayout.PAGE_START);
                 dout.writeUTF(output);
             }
             else{
-                JOptionPane.showMessageDialog(f, "Not connected to any clients");
-
+                JOptionPane.showMessageDialog(f, "Not connected to server");
             }
+
+
 
             text.setText("");
             f.repaint();
             f.invalidate();
             f.validate();
-        }
-        catch(Exception ex){
+        }catch(Exception ex){
             ex.printStackTrace();
         }
 
@@ -137,6 +138,9 @@ public class Server implements ActionListener{
         int textWidth = metrics.stringWidth(out);
         int height_req_factor = (textWidth/400)+1;
 
+        
+        System.out.println(textWidth);
+
         p.add(output);
         p.setBackground(MAIN_BACKGROUND_COLOR);
 
@@ -144,30 +148,32 @@ public class Server implements ActionListener{
     }
 
     public static void main(String[] args) {
-        new Server();
+        new Client();
 
         try {
-            ServerSocket skt = new ServerSocket(6001);
+            Socket s = new Socket("127.0.0.1", 6001);
 
-            while (true) { 
-                Socket s =  skt.accept();
-                DataInputStream din = new DataInputStream(s.getInputStream());
-                dout = new DataOutputStream(s.getOutputStream());
+            DataInputStream din = new DataInputStream(s.getInputStream());
+            dout = new DataOutputStream(s.getOutputStream());
 
-                while(true){
-                    String msg = din.readUTF();
-                    JPanel panel = formatLabel(msg);
+            while(true){
+                p3.setLayout(new BorderLayout());
+                String msg = din.readUTF();
+                JPanel panel = formatLabel(msg);
 
-                    JPanel left = new JPanel(new BorderLayout());
-                    left.add(panel, BorderLayout.LINE_START);
+                JPanel left = new JPanel(new BorderLayout());
+                left.add(panel, BorderLayout.LINE_START);
 
-                    vertical.add(left);
-                    vertical.setOpaque(false);
-                    f.validate();
-                }
+                vertical.add(left);
+                vertical.add(Box.createVerticalStrut(20));
+                vertical.setOpaque(false);
+
+                p3.add(vertical, BorderLayout.PAGE_START);
+                f.validate();
             }
+
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }   
     }
 }
